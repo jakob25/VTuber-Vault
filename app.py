@@ -1,6 +1,6 @@
 """
 app.py
-VTVault main entry — now with top-level tabs
+VTVault main entry point
 """
 
 import streamlit as st
@@ -10,11 +10,12 @@ from core.ui import (
 )
 from database import needs_role_selection
 from pages import (
-    page_auth, page_role_select, page_home,
+    page_auth, page_role_select,
+    page_home, page_bets, page_bet_detail, page_create_bet,
     page_achievements, page_shop, page_leaderboard,
     page_my_profile, page_how_it_works,
 )
-from features.clips_feature import page_clips  # now uses polaroid
+from features.clips_feature import page_clips
 
 st.set_page_config(
     page_title="VTVault | The Ultimate VTuber Archive",
@@ -38,11 +39,9 @@ def main():
     render_sidebar()
     show_onboarding_popup()
 
-    # New VTVault top-tab home
     if st.session_state.page == "home":
         page_home()
     else:
-        # Keep old routes for now
         routes = {
             "bets": page_bets,
             "bet_detail": page_bet_detail,
