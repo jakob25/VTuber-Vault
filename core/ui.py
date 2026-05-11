@@ -1,89 +1,118 @@
 """
 core/ui.py
-Shared UI layer for the entire app.
-Import only what you need from here.
+VTVault — Alchemist's Terminal Theme + Updated Sidebar
 """
 
 import streamlit as st
-from core.config import ROLE_CSS, ROLE_COLOR, BADGE_STYLES
+from core.config import ROLE_CSS, BADGE_STYLES
 
-# Lazy DB import to avoid circular imports
+# Lazy DB import
 def _get_db():
-    from database import (
-        get_user, claim_daily_bonus, get_user_badges,
-        get_all_achievements, get_equipped, pot_total
-    )
+    from database import get_user, claim_daily_bonus, get_user_badges, get_all_achievements, get_equipped, pot_total
     return get_user, claim_daily_bonus, get_user_badges, get_all_achievements, get_equipped, pot_total
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# STYLES
-# ══════════════════════════════════════════════════════════════════════════════
 def inject_styles():
-    """Inject all global VTuberBets styling - brighter & more neon."""
+    """VTVault Alchemist's Terminal Theme"""
     st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Comic+Neue:wght@400;700&display=swap');
 
-    *, *::before, *::after { box-sizing: border-box; }
+        .stApp {
+            background-color: #12141D !important;
+            color: #E0E0E0 !important;
+            font-family: 'Courier Prime', monospace;
+        }
 
-    html, body, [data-testid="stAppViewContainer"] {
-        background: #05080f !important;
-        color: #e8f0ff !important;
-        font-family: 'DM Sans', sans-serif;
-    }
-    /* Stronger neon background glow */
-    [data-testid="stAppViewContainer"]::before {
-        content: '';
-        position: fixed; inset: 0; z-index: 0;
-        background:
-            radial-gradient(ellipse 80% 50% at 20% 20%, rgba(0,212,255,0.18) 0%, transparent 60%),
-            radial-gradient(ellipse 60% 40% at 80% 80%, rgba(170,0,255,0.15) 0%, transparent 60%);
-        animation: mesh-drift 12s ease-in-out infinite alternate;
-        pointer-events: none;
-    }
-    @keyframes mesh-drift {
-        0%   { opacity: 1; }
-        100% { opacity: 0.75; }
-    }
-    /* Typography - brighter */
-    h1, h2, h3, .landing-logo, .basics-title {
-        color: #ffffff !important;
-    }
-    .landing-tagline {
-        color: #c8f0ff !important;
-    }
-    /* Basics box & cards - much more vibrant */
-    .basics-block, .card {
-        border-color: #00eeff88 !important;
-        box-shadow: 0 0 30px rgba(0, 238, 255, 0.25) !important;
-    }
-    .basics-label, .stat-val {
-        color: #00eeff !important;
-    }
-    /* Buttons pop more */
-    .stButton > button {
-        background: linear-gradient(135deg, #00aaff, #00d4ff, #8800ff) !important;
-        color: #ffffff !important;
-        box-shadow: 0 0 25px rgba(0, 212, 255, 0.6) !important;
-    }
-    .stButton > button:hover {
-        box-shadow: 0 0 40px rgba(0, 212, 255, 0.8) !important;
-    }
-    /* Pills and accents */
-    .pill-open   { color: #00ff99; border-color: #00ff99; }
-    .pill-voting { color: #ffdd44; border-color: #ffdd44; }
+        h1, h2, h3, .vtvault-header {
+            color: #FFB84D !important;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 700;
+        }
 
-    /* General brighter links and text */
-    a, .stream-link, .basics-body {
-        color: #a0e0ff !important;
-    }
+        .vtvault-header {
+            font-size: 2.8rem;
+            text-shadow: 0 0 15px #FFB84D88;
+        }
+
+        /* Tabs */
+        .stTabs [data-baseweb="tab-list"] {
+            background-color: #1A1D29;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 8px;
+            gap: 12px;
+        }
+        .stTabs [data-baseweb="tab"] {
+            color: #E0E0E0;
+            border-radius: 4px;
+            padding: 10px 20px;
+        }
+        .stTabs [aria-selected="true"] {
+            background-color: #FFB84D !important;
+            color: #12141D !important;
+            font-weight: bold;
+        }
+
+        /* Polaroid Cards */
+        .polaroid-card {
+            background-color: #F9F9F9;
+            color: #12141D;
+            padding: 16px;
+            margin: 12px 0;
+            border-radius: 4px;
+            box-shadow: 4px 6px 14px rgba(0,0,0,0.6);
+            transform: rotate(-1.5deg);
+            transition: all 0.2s ease;
+        }
+        .polaroid-card:hover {
+            transform: rotate(1deg) scale(1.03);
+        }
+        .polaroid-video {
+            width: 100%;
+            height: 220px;
+            background: #000;
+            margin-bottom: 12px;
+            border: 8px solid #fff;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+        }
+        .polaroid-caption {
+            font-family: 'Comic Neue', cursive;
+            font-size: 15px;
+            font-style: italic;
+            border-bottom: 2px solid #333;
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+        }
+        .polaroid-tags {
+            color: #4DFFF3;
+            font-size: 13px;
+            font-weight: bold;
+            font-family: 'Courier Prime', monospace;
+        }
+
+        /* Notices */
+        .notice {
+            padding: 14px 20px;
+            border-radius: 4px;
+            margin: 12px 0;
+            font-family: 'Courier Prime', monospace;
+        }
+        .notice-success { background: #1A2D1A; border-left: 5px solid #4DFFF3; }
+        .notice-error   { background: #2D1A1A; border-left: 5px solid #FF6B6B; }
+        .notice-warn    { background: #2D2A1A; border-left: 5px solid #FFB84D; }
+
+        /* Sidebar */
+        .stSidebar {
+            background-color: #1A1D29 !important;
+            border-right: 2px solid #FFB84D;
+        }
+        .stSidebar .stMarkdown h1, .stSidebar .stMarkdown h2 {
+            color: #FFB84D !important;
+        }
     </style>
     """, unsafe_allow_html=True)
 
-# ══════════════════════════════════════════════════════════════════════════════
-# SESSION STATE
-# ══════════════════════════════════════════════════════════════════════════════
 def init_state():
     defaults = [
         ("username", None),
@@ -96,10 +125,6 @@ def init_state():
         if key not in st.session_state:
             st.session_state[key] = default
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# TOASTS
-# ══════════════════════════════════════════════════════════════════════════════
 def set_toast(kind: str, msg: str):
     st.session_state.toast = (kind, msg)
 
@@ -111,21 +136,14 @@ def show_toast():
     st.markdown(f'<div class="notice {css}">{msg}</div>', unsafe_allow_html=True)
     st.session_state.toast = None
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# NAVIGATION
-# ══════════════════════════════════════════════════════════════════════════════
 def nav(page: str, bet_id=None):
     st.session_state.page = page
     if bet_id is not None:
         st.session_state.selected_bet = bet_id
     st.rerun()
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# SIDEBAR (when logged in)
-# ══════════════════════════════════════════════════════════════════════════════
 def render_sidebar():
+    """Updated sidebar with VTVault terminal aesthetic + Scraps"""
     if not st.session_state.username:
         return
 
@@ -135,26 +153,20 @@ def render_sidebar():
         return
 
     with st.sidebar:
-        st.markdown(f"""
-        <div style="padding:12px 0 20px;">
-            <div style="font-family:'Syne',sans-serif;font-size:1.35rem;font-weight:800;color:#e8f0ff;">
-                VTuberBets
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown('<div style="font-family:Courier Prime;font-size:1.8rem;font-weight:700;color:#FFB84D;">⚙️ VTVault</div>', unsafe_allow_html=True)
 
-        # Wallet
+        # Wallet — now shows Scraps
         st.markdown(f"""
-        <div style="background:#0a0f1f;border:1px solid #1a2a44;border-radius:12px;padding:16px;text-align:center;margin-bottom:16px;">
-            <div style="font-size:0.75rem;color:#2a4a7a;">{st.session_state.username}</div>
-            <div style="font-family:'Syne',sans-serif;font-size:2.1rem;font-weight:800;color:#00d4ff;">
+        <div style="background:#12141D;border:2px solid #FFB84D;border-radius:8px;padding:18px;text-align:center;margin:20px 0;">
+            <div style="font-size:0.8rem;color:#4DFFF3;">{st.session_state.username}</div>
+            <div style="font-family:Courier Prime;font-size:2.4rem;font-weight:700;color:#FFB84D;">
                 {user['coins']:,}
             </div>
-            <div style="font-size:0.7rem;color:#1e3060;">V-COINS</div>
+            <div style="font-size:0.75rem;color:#E0E0E0;letter-spacing:1px;">SCRAPS</div>
         </div>
         """, unsafe_allow_html=True)
 
-        if st.button("Claim Daily Bonus (+250)", use_container_width=True):
+        if st.button("Claim Daily Bonus (+250)", use_container_width=True, type="primary"):
             ok, msg = claim_daily_bonus(st.session_state.username)
             set_toast("success" if ok else "warn", msg)
             st.rerun()
@@ -183,17 +195,12 @@ def render_sidebar():
             st.session_state.page = "home"
             st.rerun()
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# ONBOARDING
-# ══════════════════════════════════════════════════════════════════════════════
 def show_onboarding_popup():
     if not st.session_state.get("show_onboarding"):
         return
-
     _, mid, _ = st.columns([1, 3, 1])
     with mid:
-        st.markdown("Welcome to VTuberBets!")
+        st.markdown("Welcome to **VTVault**!")
         if st.button("Got it! Let's go", use_container_width=True):
             st.session_state.show_onboarding = False
             st.rerun()
