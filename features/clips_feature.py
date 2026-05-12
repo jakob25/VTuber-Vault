@@ -15,22 +15,16 @@ def render_clip_card(clip: dict):
     st.markdown(f"""
     <div class="polaroid-card">
         <div class="polaroid-video">
-            <iframe width="100%" height="100%" 
-                    src="{clip['clip_url']}" 
-                    frameborder="0" allowfullscreen></iframe>
+            <iframe width="100%" height="100%" src="{clip['clip_url']}" frameborder="0" allowfullscreen></iframe>
         </div>
         <div class="polaroid-caption">
             {clip['vtuber_name']} — {clip['title']}
         </div>
         <div class="polaroid-tags">
-            {' '.join([f'#{t}' for t in clip.get('tags', [])])}
-        </div>
-        <div style="margin-top:8px; font-size:0.85rem; color:#666;">
-            👍 {clip.get('upvotes', 0)} • by {clip.get('submitted_by', 'anonymous')}
+            {' '.join([f'#{t}' for t in clip.get('tags', ['Raw'])])} 
         </div>
     </div>
     """, unsafe_allow_html=True)
-
 
 def render_clip_submit_form():
     with st.form("clip_submit_form"):
