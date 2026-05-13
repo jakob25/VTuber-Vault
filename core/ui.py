@@ -1,138 +1,89 @@
 """
 core/ui.py
-VTVault — New Cyber/Gold Sci-Fi Aesthetic (matches your reference image)
+Shared UI layer for the entire app.
+Import only what you need from here.
 """
 
 import streamlit as st
+from core.config import ROLE_CSS, ROLE_COLOR, BADGE_STYLES
 
+# Lazy DB import to avoid circular imports
+def _get_db():
+    from database import (
+        get_user, claim_daily_bonus, get_user_badges,
+        get_all_achievements, get_equipped, pot_total
+    )
+    return get_user, claim_daily_bonus, get_user_badges, get_all_achievements, get_equipped, pot_total
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# STYLES
+# ══════════════════════════════════════════════════════════════════════════════
 def inject_styles():
+    """Inject all global VTuberBets styling - brighter & more neon."""
     st.markdown("""
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@300;400;500;600&display=swap');
 
-        .stApp {
-            background: #0A0F1F;
-            background-image: 
-                linear-gradient(#1E2937 1px, transparent 1px),
-                linear-gradient(90deg, #1E2937 1px, transparent 1px);
-            background-size: 40px 40px;
-            color: #E2E8F0;
-            font-family: 'Inter', sans-serif;
-        }
+    *, *::before, *::after { box-sizing: border-box; }
 
-        /* Custom Header Bar - matches your image */
-        .vtvault-header-bar {
-            background: linear-gradient(90deg, #1E2937, #334155);
-            border-bottom: 3px solid #F59E0B;
-            padding: 12px 30px;
-            margin: -20px -20px 30px -20px;
-            display: flex;
-            align-items: center;
-            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
-        }
-        .vtvault-logo {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 2.1rem;
-            font-weight: 600;
-            background: linear-gradient(90deg, #67E8F9, #F59E0B);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -2px;
-        }
+    html, body, [data-testid="stAppViewContainer"] {
+        background: #05080f !important;
+        color: #e8f0ff !important;
+        font-family: 'DM Sans', sans-serif;
+    }
+    /* Stronger neon background glow */
+    [data-testid="stAppViewContainer"]::before {
+        content: '';
+        position: fixed; inset: 0; z-index: 0;
+        background:
+            radial-gradient(ellipse 80% 50% at 20% 20%, rgba(0,212,255,0.18) 0%, transparent 60%),
+            radial-gradient(ellipse 60% 40% at 80% 80%, rgba(170,0,255,0.15) 0%, transparent 60%);
+        animation: mesh-drift 12s ease-in-out infinite alternate;
+        pointer-events: none;
+    }
+    @keyframes mesh-drift {
+        0%   { opacity: 1; }
+        100% { opacity: 0.75; }
+    }
+    /* Typography - brighter */
+    h1, h2, h3, .landing-logo, .basics-title {
+        color: #ffffff !important;
+    }
+    .landing-tagline {
+        color: #c8f0ff !important;
+    }
+    /* Basics box & cards - much more vibrant */
+    .basics-block, .card {
+        border-color: #00eeff88 !important;
+        box-shadow: 0 0 30px rgba(0, 238, 255, 0.25) !important;
+    }
+    .basics-label, .stat-val {
+        color: #00eeff !important;
+    }
+    /* Buttons pop more */
+    .stButton > button {
+        background: linear-gradient(135deg, #00aaff, #00d4ff, #8800ff) !important;
+        color: #ffffff !important;
+        box-shadow: 0 0 25px rgba(0, 212, 255, 0.6) !important;
+    }
+    .stButton > button:hover {
+        box-shadow: 0 0 40px rgba(0, 212, 255, 0.8) !important;
+    }
+    /* Pills and accents */
+    .pill-open   { color: #00ff99; border-color: #00ff99; }
+    .pill-voting { color: #ffdd44; border-color: #ffdd44; }
 
-        /* Tabs */
-        .stTabs [data-baseweb="tab-list"] {
-            background: transparent;
-            gap: 8px;
-        }
-        .stTabs [data-baseweb="tab"] {
-            background: #1E2937;
-            color: #CBD5E1;
-            border-radius: 6px;
-            padding: 10px 24px;
-            font-weight: 600;
-        }
-        .stTabs [aria-selected="true"] {
-            background: #F59E0B !important;
-            color: #0F172A !important;
-        }
-
-        /* Polaroid Cards - much closer to reference */
-        .polaroid-card {
-            background: #F8FAFC;
-            color: #0F172A;
-            padding: 12px;
-            margin: 15px 0;
-            border: 12px solid #F8FAFC;
-            box-shadow: 8px 10px 20px rgba(0,0,0,0.6);
-            transform: rotate(-2deg);
-            transition: all 0.3s ease;
-            position: relative;
-        }
-        .polaroid-card:hover {
-            transform: rotate(1deg) scale(1.03);
-        }
-        .polaroid-card::before {
-            content: '';
-            position: absolute;
-            top: -8px;
-            left: 30%;
-            width: 40%;
-            height: 20px;
-            background: #F59E0B;
-            opacity: 0.15;
-            transform: rotate(-8deg);
-            z-index: 2;
-        }
-        .polaroid-video {
-            width: 100%;
-            height: 240px;
-            background: #000;
-            margin-bottom: 12px;
-            border: 4px solid #0F172A;
-        }
-        .polaroid-caption {
-            font-size: 15px;
-            font-weight: 600;
-            color: #0F172A;
-            margin-bottom: 8px;
-        }
-        .polaroid-tags {
-            color: #67E8F9;
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        /* Buttons */
-        .stButton > button {
-            background: linear-gradient(90deg, #F59E0B, #FB923C);
-            color: #0F172A;
-            font-weight: 600;
-            border: none;
-            border-radius: 6px;
-        }
-        .stButton > button:hover {
-            box-shadow: 0 0 15px #F59E0B;
-        }
-
-        /* Notices */
-        .notice {
-            padding: 16px;
-            border-radius: 8px;
-            margin: 12px 0;
-        }
-        .notice-success { background: #052E16; border-left: 6px solid #67E8F9; }
-        .notice-error   { background: #3B1F1F; border-left: 6px solid #F87171; }
-
-        /* Sidebar */
-        .stSidebar {
-            background-color: #1E2937 !important;
-            border-right: 3px solid #F59E0B;
-        }
+    /* General brighter links and text */
+    a, .stream-link, .basics-body {
+        color: #a0e0ff !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# Keep the rest of your helpers (init_state, toast, nav, sidebar, etc.)
+# ══════════════════════════════════════════════════════════════════════════════
+# SESSION STATE
+# ══════════════════════════════════════════════════════════════════════════════
 def init_state():
     defaults = [
         ("username", None),
@@ -145,6 +96,10 @@ def init_state():
         if key not in st.session_state:
             st.session_state[key] = default
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TOASTS
+# ══════════════════════════════════════════════════════════════════════════════
 def set_toast(kind: str, msg: str):
     st.session_state.toast = (kind, msg)
 
@@ -152,45 +107,93 @@ def show_toast():
     if not st.session_state.toast:
         return
     kind, msg = st.session_state.toast
-    css = {"success": "notice-success", "error": "notice-error", "warn": "notice"}.get(kind, "notice")
+    css = {"success": "notice-success", "error": "notice-error", "warn": "notice-warn"}.get(kind, "notice")
     st.markdown(f'<div class="notice {css}">{msg}</div>', unsafe_allow_html=True)
     st.session_state.toast = None
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+# NAVIGATION
+# ══════════════════════════════════════════════════════════════════════════════
 def nav(page: str, bet_id=None):
     st.session_state.page = page
     if bet_id is not None:
         st.session_state.selected_bet = bet_id
     st.rerun()
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SIDEBAR (when logged in)
+# ══════════════════════════════════════════════════════════════════════════════
 def render_sidebar():
-    # (keeping your existing sidebar logic — we'll update wallet to "SCRAPS" later)
-    from database import get_user, claim_daily_bonus
     if not st.session_state.username:
         return
+
+    get_user, claim_daily_bonus, _, _, _, _ = _get_db()
     user = get_user(st.session_state.username)
     if not user:
         return
+
     with st.sidebar:
-        st.markdown("### ⚙️ VTVault")
         st.markdown(f"""
-        <div style="background:#0F172A;border:2px solid #F59E0B;border-radius:8px;padding:16px;text-align:center;margin:20px 0;">
-            <div style="color:#67E8F9;">{st.session_state.username}</div>
-            <div style="font-size:2.2rem;font-weight:700;color:#F59E0B;">{user['coins']:,}</div>
-            <div style="font-size:0.8rem;color:#CBD5E1;">SCRAPS</div>
+        <div style="padding:12px 0 20px;">
+            <div style="font-family:'Syne',sans-serif;font-size:1.35rem;font-weight:800;color:#e8f0ff;">
+                VTuberBets
+            </div>
         </div>
         """, unsafe_allow_html=True)
+
+        # Wallet
+        st.markdown(f"""
+        <div style="background:#0a0f1f;border:1px solid #1a2a44;border-radius:12px;padding:16px;text-align:center;margin-bottom:16px;">
+            <div style="font-size:0.75rem;color:#2a4a7a;">{st.session_state.username}</div>
+            <div style="font-family:'Syne',sans-serif;font-size:2.1rem;font-weight:800;color:#00d4ff;">
+                {user['coins']:,}
+            </div>
+            <div style="font-size:0.7rem;color:#1e3060;">V-COINS</div>
+        </div>
+        """, unsafe_allow_html=True)
+
         if st.button("Claim Daily Bonus (+250)", use_container_width=True):
             ok, msg = claim_daily_bonus(st.session_state.username)
             set_toast("success" if ok else "warn", msg)
             st.rerun()
-        # ... rest of your nav buttons (Home, Bets, etc.)
 
+        st.markdown("---")
+
+        # Navigation
+        pages = [
+            ("Home", "home"),
+            ("Bets", "bets"),
+            ("Create Bet", "create_bet"),
+            ("Clip Hub", "clips"),
+            ("Achievements", "achievements"),
+            ("Shop", "shop"),
+            ("Leaderboard", "leaderboard"),
+            ("My Profile", "my_profile"),
+        ]
+        for label, key in pages:
+            if st.button(label, key=f"nav_{key}", use_container_width=True):
+                nav(key)
+
+        st.markdown("---")
+
+        if st.button("Log out", use_container_width=True):
+            st.session_state.username = None
+            st.session_state.page = "home"
+            st.rerun()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ONBOARDING
+# ══════════════════════════════════════════════════════════════════════════════
 def show_onboarding_popup():
     if not st.session_state.get("show_onboarding"):
         return
+
     _, mid, _ = st.columns([1, 3, 1])
     with mid:
-        st.markdown("Welcome to **VTVault**!")
+        st.markdown("Welcome to VTuberBets!")
         if st.button("Got it! Let's go", use_container_width=True):
             st.session_state.show_onboarding = False
             st.rerun()
